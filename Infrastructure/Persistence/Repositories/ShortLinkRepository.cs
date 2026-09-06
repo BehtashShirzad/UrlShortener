@@ -17,16 +17,7 @@ internal sealed class ShortLinkRepository(
             cancellationToken);
     }
 
-    public Task<bool> ExistsByCustomAliasAsync(
-        string customAlias,
-        CancellationToken cancellationToken = default)
-    {
-        return dbContext.ShortLinks
-            .AsNoTracking()
-            .AnyAsync(
-                x => x.CustomAlias == customAlias,
-                cancellationToken);
-    }
+  
 
     public Task<bool> ExistsByShortCodeAsync(
         string shortCode,
@@ -53,6 +44,8 @@ internal sealed class ShortLinkRepository(
         string shortCode,
         CancellationToken cancellationToken = default)
     {
+
+        
         return dbContext.ShortLinks
             .FirstOrDefaultAsync(
                 x => x.ShortCode == shortCode,

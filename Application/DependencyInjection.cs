@@ -16,10 +16,12 @@ namespace Application
             services.AddValidatorsFromAssembly(assembly.Assembly);
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ExceptionHandlerBehavior<,>));
+            services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
             services.AddMediatR(cg =>
             {
                 cg.RegisterServicesFromAssemblies(assembly.Assembly);
             });
+            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(SaveChangesBehavior<,>));
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
             return services;
         }

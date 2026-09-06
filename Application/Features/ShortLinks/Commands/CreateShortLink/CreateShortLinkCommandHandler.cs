@@ -1,20 +1,29 @@
 ﻿using Application.Abstractions.Contracts;
- 
-using Domain.Aggregates.ShortLinks;
+using Domain.Aggregates.ShortLinks.Repositories;
 using Domain.Aggregates.ShortLinks.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Application.Features.ShortLinks.Commands.CreateShortLink
+namespace Application.Features.ShortLinks.Commands.CreateShortLink;
+
+public sealed class CreateShortLinkCommandHandler(
+    IShortLinkDomainService shortLinkDomainService,
+    IShortLinkRepository shortLinkRepository)
+    : ICommandHandler<CreateShortLinkCommand, CreateShortLinkCommandResponse>
 {
-    public sealed class CreateShortLinkCommandHandler (IShortLinkDomainService shortLinkDomainService) : ICommandHandler<CreateShortLinkCommand, CreateShortLinkCommandResponse>
+    public async Task<CreateShortLinkCommandResponse> Handle(
+        CreateShortLinkCommand request,
+        CancellationToken cancellationToken)
     {
-        
-        public async Task<CreateShortLinkCommandResponse> Handle(CreateShortLinkCommand request, CancellationToken cancellationToken)
-        {
-           var result = await shortLinkDomainService.CreateShortLink(request.OriginalUrl,  request.RedirectType,request.ExpiresAt, request.MaxClicks);
-            return new CreateShortLinkCommandResponse(result.ShortCode);
-        }
+        var shortLink = await shortLinkDomainService.CreateShortLink(
+            request.OriginalUrl,
+            request.RedirectType,
+            request.ExpiresAt,
+            request.MaxClicks);
+
+        await shortLinkRepository.AddAsync(
+            shortLink,
+            cancellationToken);
+
+        return new CreateShortLinkCommandResponse(
+            shortLink.ShortCode);
     }
 }

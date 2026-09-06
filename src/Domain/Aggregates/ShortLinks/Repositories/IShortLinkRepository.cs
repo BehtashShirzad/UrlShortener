@@ -14,10 +14,7 @@ public interface IShortLinkRepository
         string shortCode,
         CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsByCustomAliasAsync(
-        string customAlias,
-        CancellationToken cancellationToken = default);
-
+ 
     Task AddAsync(
         ShortLink shortLink,
         CancellationToken cancellationToken = default);

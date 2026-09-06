@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Domain.Abstractions.Events;
 using MediatR;
-using PropertyManagement.Domain.Abstractions.Events;
+ 
 
 namespace Application.Abstractions.Events
 {

@@ -1,4 +1,5 @@
-﻿using Domain.Abstractions.Aggregates;
+﻿using Domain.Abstractions;
+using Domain.Abstractions.Aggregates;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,6 +21,7 @@ namespace Domain.Aggregates.ShortLinks
             IsActive=true;
             MaxClicks = maxClicks;
             RedirectType = redirectType;
+            Id = IdGenerator.New();
         }
         public string OriginalUrl { get; private set; }
         public string ShortCode { get; private set; }
