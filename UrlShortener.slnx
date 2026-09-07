@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="Api/Api.csproj" Id="95055cdb-4b1d-4ab5-9209-ea65493f3cf6" />
-    <Project Path="Application/Application.csproj" Id="80e26954-a347-49b9-b63c-5c8ea6133134" />
-    <Project Path="Infrastructure/Infrastructure.csproj" Id="40e4f676-0345-4336-b905-c9dfc103f083" />
+    <Project Path="src/Api/Api.csproj" Id="95055cdb-4b1d-4ab5-9209-ea65493f3cf6" />
+    <Project Path="src/Application/Application.csproj" Id="80e26954-a347-49b9-b63c-5c8ea6133134" />
+    <Project Path="src/Infrastructure/Infrastructure.csproj" Id="40e4f676-0345-4336-b905-c9dfc103f083" />
+    <Project Path="src/Migrations/Migrations.csproj" Id="80600282-4799-4745-a9a0-3a26a4cb3bda" />
+    <Project Path="src/AppHost/AppHost.csproj" Id="ad934363-56bf-4f84-8524-a09fdaa04d44" />
     <Project Path="src/Domain/Domain.csproj" Id="29189e32-31dd-44f8-9fc5-767a960613ae" />
   </Folder>
 </Solution>

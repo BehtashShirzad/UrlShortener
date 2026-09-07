@@ -6,8 +6,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 	<ItemGroup>
+		<PackageReference Include="AsyncKeyedLock" Version="8.0.2" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.12" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+		<PackageReference Include="Polly.Extensions" Version="8.7.0" />
+		<PackageReference Include="StackExchange.Redis" Version="3.1.31" />
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\Application\Application.csproj" />

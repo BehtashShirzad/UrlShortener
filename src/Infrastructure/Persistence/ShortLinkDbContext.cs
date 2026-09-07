@@ -3,15 +3,29 @@ using Domain.Abstractions.Aggregates;
 using Domain.Abstractions.Entities;
 using Domain.Aggregates.ShortLinks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Persistence;
 
-internal sealed class ShortLinkDbContext(
+public sealed class ShortLinkDbContext :DbContext
+    
+{
+    readonly IDomainEventBus domainEventBus;
+    readonly ICurrentUser currentUser;
+    public ShortLinkDbContext(
+     DbContextOptions<ShortLinkDbContext> options)
+     : base(options)
+    {
+    }
+
+    public ShortLinkDbContext(
     DbContextOptions<ShortLinkDbContext> options,
     IDomainEventBus domainEventBus,
-    ICurrentUser currentUser)
-    : DbContext(options)
-{
+    ICurrentUser currentUser) : base(options)
+    {
+        this.domainEventBus = domainEventBus;
+        this.currentUser = currentUser;
+    }
     public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
 
     public override Task<int> SaveChangesAsync(

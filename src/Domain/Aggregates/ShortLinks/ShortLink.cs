@@ -1,5 +1,6 @@
 ﻿using Domain.Abstractions;
 using Domain.Abstractions.Aggregates;
+using Domain.Aggregates.ShortLinks.Events;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,7 +33,16 @@ namespace Domain.Aggregates.ShortLinks
 
         public static ShortLink Create(string originalUrl, string shortCode, RedirectType redirectType, DateTime? expiresAt, long? maxClicks)
         {
-            return new ShortLink(originalUrl, shortCode,  redirectType, expiresAt, maxClicks);
+            var shortLink= new ShortLink(originalUrl, shortCode,  redirectType, expiresAt, maxClicks);
+
+            shortLink.RaiseEvent(
+             new ShortLinkCreatedDomainEvent(
+             shortLink.Id,
+             shortLink.ShortCode,
+             shortLink.OriginalUrl,
+             shortLink.RedirectType,
+             shortLink.ExpiresAt));
+            return shortLink;
         }
         
 
