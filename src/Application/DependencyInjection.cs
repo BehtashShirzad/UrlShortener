@@ -22,7 +22,7 @@ namespace Application
                 cg.RegisterServicesFromAssemblies(assembly.Assembly);
             });
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(SaveChangesBehavior<,>));
-            services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+
             return services;
         }
     }

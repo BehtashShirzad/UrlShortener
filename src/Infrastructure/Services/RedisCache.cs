@@ -26,8 +26,18 @@ internal sealed class ShortLinkRedisCache(
 
         try
         {
-            return JsonSerializer.Deserialize<ShortLinkCacheEntry>(
+            var entry = JsonSerializer.Deserialize<ShortLinkCacheEntry>(
                 value.ToString());
+
+            // TTL is an optimization; business expiration must hold even for
+            // old payloads or writes delayed between TTL calculation and Redis.
+            if (entry?.ExpiresAt is DateTime expiresAt && expiresAt <= DateTime.UtcNow)
+            {
+                await RemoveAsync(shortCode, cancellationToken);
+                return null;
+            }
+
+            return entry;
         }
         catch (JsonException)
         {
