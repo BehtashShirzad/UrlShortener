@@ -2,7 +2,12 @@
 
 A production-minded URL shortening service built with ASP.NET Core, PostgreSQL, Redis, Polly, and .NET Aspire.
 
-The project focuses on building a fast and resilient redirect flow while keeping PostgreSQL as the source of truth and Redis as an optional performance layer.
+The project focuses on building a fast and resilient redirect flow while keeping PostgreSQL as the source of truth.
+
+Redis serves two separate purposes:
+
+- Distributed caching for redirect performance
+- Redis Streams for asynchronous click tracking
 
 ---
 
@@ -22,6 +27,12 @@ The project focuses on building a fast and resilient redirect flow while keeping
 * Domain events
 * EF Core migrations
 * .NET Aspire orchestration
+* Asynchronous click tracking
+* Redis Streams
+* Consumer groups
+* Idempotent click processing
+* Atomic click counters
+* Multi-instance safe click processing
 
 ---
 
@@ -56,6 +67,10 @@ src/
 
 The Domain layer stays independent from infrastructure concerns such as EF Core, Redis, and ASP.NET Core.
 
+PostgreSQL remains the source of truth.
+
+Redis caching is treated as a performance optimization, while Redis Streams are used for asynchronous click analytics.
+
 ---
 
 ## Redirect Flow
@@ -68,14 +83,14 @@ Request
    ▼
 Redis
    │
-   ├── HIT ─────────────► Redirect
+   ├── HIT ─────────────► Resolve Link
    │
    └── MISS / FAILURE
           │
           ▼
       Memory Cache
           │
-          ├── HIT ──────► Redirect
+          ├── HIT ──────► Resolve Link
           │
           └── MISS
                 │
@@ -89,18 +104,155 @@ Redis
           Populate Cache
                 │
                 ▼
+           Resolve Link
+                │
+                ▼
+       Publish Click Event
+                │
+                ▼
              Redirect
 ```
 
-PostgreSQL remains the source of truth.
+A Redis cache failure should not prevent a valid short link from being resolved.
 
-Redis is used only as a performance optimization, so a Redis outage should not make the redirect endpoint unavailable.
+---
+
+## Click Tracking Flow
+
+Click counting is asynchronous and intentionally kept outside direct database writes on the critical redirect path.
+
+Each successful short-link resolution publishes a click event to a Redis Stream.
+
+```text
+Request
+   │
+   ▼
+Resolve Short Link
+   │
+   ▼
+Publish Click Event
+   │
+   ▼
+Redirect
+
+
+Redis Stream
+   │
+   ▼
+Consumer Group
+   │
+   ▼
+Background Consumer
+   │
+   ▼
+Idempotent Processing
+   │
+   ▼
+Atomic PostgreSQL Increment
+   │
+   ▼
+Commit
+   │
+   ▼
+ACK
+```
+
+Each click message contains a unique event identifier:
+
+```text
+EventId
+ShortLinkId
+ClickedAt
+```
+
+This allows redirect processing and click-count persistence to remain decoupled.
+
+---
+
+## Redis Streams
+
+Redis Streams are used for asynchronous click processing.
+
+Unlike Redis Pub/Sub, stream entries remain available for later consumption instead of being delivered only to subscribers that are currently connected.
+
+A shared consumer group allows multiple application instances to distribute click-processing work.
+
+```text
+Redis Stream
+      │
+      ▼
+Consumer Group
+   ├── API Instance A
+   ├── API Instance B
+   └── API Instance C
+```
+
+Consumers acknowledge messages only after database processing succeeds.
+
+Redis Streams provide at-least-once delivery semantics, so consumers must be idempotent.
+
+---
+
+## Idempotent Click Processing
+
+Redis Stream entries may be delivered more than once.
+
+To prevent the same click from incrementing the counter multiple times, every click event contains a unique `EventId`.
+
+Processed event identifiers are stored in PostgreSQL:
+
+```text
+ProcessedClickEvents
+├── EventId      (Primary Key)
+├── ShortLinkId
+└── ProcessedAt
+```
+
+Processing happens inside a database transaction:
+
+```text
+BEGIN
+   │
+   ├── INSERT ProcessedClickEvent(EventId)
+   │
+   ├── UPDATE ShortLinks
+   │      SET TotalClicks = TotalClicks + 1
+   │
+   └── COMMIT
+          │
+          ▼
+     ACK Redis Message
+```
+
+The primary key on `EventId` acts as the idempotency constraint.
+
+If the same Redis message is delivered again, inserting the same `EventId` fails and the click counter is not incremented again.
+
+This produces effectively-once database effects on top of at-least-once message delivery.
+
+---
+
+## Atomic Click Counters
+
+`TotalClicks` is updated directly in PostgreSQL using an atomic database operation.
+
+Conceptually:
+
+```sql
+UPDATE "ShortLinks"
+SET "TotalClicks" = "TotalClicks" + 1
+WHERE "Id" = @shortLinkId;
+```
+
+The application does not load the aggregate, increment the value in memory, and save it back for click processing.
+
+This prevents lost updates when multiple consumers process different click events concurrently.
 
 ---
 
 ## Redis Resilience
 
-Redis operations are protected using Polly.
+Redis cache operations are protected using Polly.
 
 The resilience pipeline includes:
 
@@ -108,7 +260,7 @@ The resilience pipeline includes:
 * Circuit Breaker
 * Database fallback
 
-When Redis is unavailable:
+When the Redis cache is unavailable:
 
 ```text
 Redis Timeout
@@ -123,6 +275,8 @@ Circuit Open
 ```
 
 The redirect path intentionally avoids retries to keep latency predictable.
+
+Click-event publishing is also treated as non-critical to URL resolution: analytics failures should not make a valid redirect unavailable.
 
 ---
 
@@ -194,6 +348,37 @@ The jitter only reduces the TTL and never extends it beyond the business expirat
 
 ---
 
+## Redirect Caching and Click Tracking
+
+Permanent redirects such as HTTP `301` may be cached by browsers or intermediaries.
+
+Once cached, later navigations may bypass the URL shortener entirely:
+
+```text
+First request:
+
+Browser → Shortener → 301 → Destination
+
+
+Later requests:
+
+Browser ───────────────→ Destination
+```
+
+When this happens, the application cannot observe or count those later clicks.
+
+For links where click-tracking accuracy matters, temporary redirects such as `302` should be preferred.
+
+Redirect responses intended to remain observable may also include cache-prevention headers such as:
+
+```text
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Expires: 0
+```
+
+---
+
 ## Domain Model
 
 `ShortLink` is modeled as an aggregate root.
@@ -207,10 +392,13 @@ It contains the main business state, including:
 * Expiration
 * Active state
 * Maximum clicks
+* Total clicks
 
 Short-code generation is handled through the domain layer and checked for collisions before creation.
 
-The database should also enforce a unique constraint on short codes.
+The database also enforces uniqueness on short codes.
+
+`TotalClicks` is persisted on the short link but is updated atomically by the click-processing infrastructure rather than through an in-memory aggregate mutation.
 
 ---
 
@@ -280,6 +468,15 @@ var api = builder
 builder.Build().Run();
 ```
 
+Aspire resource names are also used as connection-string names:
+
+```text
+ConnectionStrings:shortlinks
+ConnectionStrings:redis
+```
+
+Using the same names in local configuration allows projects to run both through Aspire and independently when needed.
+
 ---
 
 ## Running Locally
@@ -317,9 +514,15 @@ Aspire will start the required resources and expose the Aspire Dashboard.
 A few simple principles guide the design:
 
 * PostgreSQL is the source of truth.
-* Redis improves performance but is not required for correctness.
-* Cache failures should not cause API failures.
-* The redirect path should fail fast when Redis is unhealthy.
+* Redis caching improves redirect performance but is not required for URL resolution.
+* Cache failures should not cause redirect failures.
+* Click analytics should not make valid redirects unavailable.
+* Redis Streams provide at-least-once delivery.
+* Click consumers must therefore be idempotent.
+* Redis messages are acknowledged only after successful database processing.
+* Click counters are incremented atomically in PostgreSQL.
+* Multiple application instances can safely share the same click consumer group.
+* The redirect path should fail fast when Redis caching is unhealthy.
 * Database traffic should be minimized.
 * Hot links should not create cache stampedes.
 * Infrastructure concerns should stay outside the domain layer.
