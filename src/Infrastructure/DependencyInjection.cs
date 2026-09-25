@@ -118,7 +118,7 @@ namespace Infrastructure
             services.AddScoped<
                 IShortLinkClickProcessor,
                 ShortLinkClickProcessorService>();
-
+            services.AddHostedService<ShortLinkClickConsumer>();
             return services;
         }
     }

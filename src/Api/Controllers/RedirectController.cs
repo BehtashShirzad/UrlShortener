@@ -15,7 +15,11 @@ namespace Api.Controllers
             var result = await sender.Send(
                 new GetShortenUrlQuery(shortenCode),
                 cancellationToken);
+            HttpContext.Response.Headers.CacheControl =
+    "no-store, no-cache, must-revalidate";
 
+            HttpContext.Response.Headers.Pragma = "no-cache";
+            HttpContext.Response.Headers.Expires = "0";
             return result.RedirectType switch
             {
                 RedirectType.Permanent => RedirectPermanent(result.Url),

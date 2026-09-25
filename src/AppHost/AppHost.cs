@@ -8,7 +8,8 @@ var database = postgres
     .AddDatabase("shortlinks");
 
 var redis = builder
-    .AddRedis("redis");
+    .AddRedis("redis")
+    .WithRedisInsight();
 
 var migrations = builder
     .AddProject<Projects.Migrations>("migrations")
