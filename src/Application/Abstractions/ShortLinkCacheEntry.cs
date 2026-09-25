@@ -6,6 +6,7 @@ using System.Text;
 namespace Application.Abstractions
 {
     public sealed record ShortLinkCacheEntry(
+      Guid Id,
       string OriginalUrl,
       RedirectType RedirectType,
       DateTime? ExpiresAt);

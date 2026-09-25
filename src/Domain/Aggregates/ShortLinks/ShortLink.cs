@@ -43,11 +43,7 @@ namespace Domain.Aggregates.ShortLinks
              shortLink.ExpiresAt));
             return shortLink;
         }
-        
-        public  void AddClick()
-        {
-            TotalClicks += 1;
-        }
+      
 
     }
 }

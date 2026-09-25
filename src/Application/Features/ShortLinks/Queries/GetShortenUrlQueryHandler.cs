@@ -1,27 +1,36 @@
 ﻿using Application.Abstractions.Caching;
 using Application.Abstractions.Contracts;
+using Application.IntegrationEvents;
+using Domain.Abstractions;
+using Domain.Aggregates.ShortLinks;
 using Domain.Aggregates.ShortLinks.Repositories;
 
 namespace Application.Features.ShortLinks.Queries;
 
 public sealed class GetShortenUrlQueryHandler(
-    IShortLinkCacheService shortLinkCacheService)
+    IShortLinkCacheService shortLinkCacheService, IShortLinkClickPublisher shortLinkClickPublisher)
     : IQueryHandler<GetShortenUrlQuery, GetShortenUrlQueryResponse>
 {
     public async Task<GetShortenUrlQueryResponse> Handle(
         GetShortenUrlQuery request,
         CancellationToken cancellationToken)
     {
-        var originalUrl = await shortLinkCacheService.GetAsync(
+        var shortLink = await shortLinkCacheService.GetAsync(
             request.ShortenCode,
             cancellationToken);
 
-        if (originalUrl is null)
+        if (shortLink is null)
             throw new InvalidOperationException("Invalid short link code.");
- 
+
+        await shortLinkClickPublisher.PublishAsync(
+                new ShortLinkClickedIntegrationEvent(
+                IdGenerator.New(),
+                shortLink.Id,
+                DateTimeOffset.UtcNow),
+                cancellationToken);
 
         return new GetShortenUrlQueryResponse(
-            originalUrl.OriginalUrl,
-            originalUrl.RedirectType);
+            shortLink.OriginalUrl,
+            shortLink.RedirectType);
     }
 }

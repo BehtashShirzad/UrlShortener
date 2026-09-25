@@ -2,7 +2,9 @@
 using Application.Abstractions.Contracts;
 using AsyncKeyedLock;
 using Domain.Aggregates.ShortLinks.Repositories;
+using Infrastructure.BackgroundServices;
 using Infrastructure.Messaging;
+using Infrastructure.Messaging.Redis;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
@@ -34,6 +36,17 @@ namespace Infrastructure
                 configuration.GetConnectionString("redis")
                 ?? throw new InvalidOperationException(
                     "Redis connection string is not configured.");
+
+            var redisStreamSection =
+                configuration.GetSection(RedisStreamOptions.SectionName)
+                ?? throw new InvalidOperationException(
+                    $"{RedisStreamOptions.SectionName}  is not configured.");
+
+             
+            services
+                .AddOptions<RedisStreamOptions>(RedisStreamOptions.SectionName)
+                .Bind(redisStreamSection);
+
 
             services.AddDbContext<ShortLinkDbContext>(options =>
             {
@@ -98,6 +111,13 @@ namespace Infrastructure
                 builder.AddTimeout(
                     TimeSpan.FromMilliseconds(500));
             });
+            services.AddSingleton<
+        IShortLinkClickPublisher,
+        RedisShortLinkClickPublisherService>();
+
+            services.AddScoped<
+                IShortLinkClickProcessor,
+                ShortLinkClickProcessorService>();
 
             return services;
         }

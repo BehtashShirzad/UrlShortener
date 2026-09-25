@@ -33,7 +33,7 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
     {
         // Whole seconds avoid PostgreSQL's microsecond timestamp rounding.
         DateTime? expiresAt = limited ? DateTime.UtcNow.Date.AddDays(2) : null;
-        long? maxClicks = limited ? 123L : null;
+       
         var original = await Factory.SeedAsync(expiresAt: expiresAt, type: type);
 
         await using var scope = Factory.Services.CreateAsyncScope();

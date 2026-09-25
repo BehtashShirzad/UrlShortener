@@ -247,6 +247,7 @@ internal sealed class ShortLinkCacheService(
             }
 
             var entry = new ShortLinkCacheEntry(
+                shortLink.Id,
                 shortLink.OriginalUrl,
                 shortLink.RedirectType,
                 shortLink.ExpiresAt);

@@ -1,6 +1,7 @@
-﻿using Infrastructure;
-using Application;
+﻿using Application;
 using Domain;
+using Infrastructure;
+using Infrastructure.Messaging.Redis;
 namespace Api
 {
     public static class DependencyInjection

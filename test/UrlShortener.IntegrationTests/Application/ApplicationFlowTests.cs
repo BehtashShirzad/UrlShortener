@@ -39,7 +39,7 @@ public sealed class ApplicationFlowTests(ShortenerFactory factory) : Integration
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var response = await sender.Send(new CreateShortLinkCommand("https://example.com", RedirectType.Temporary, null, 50));
+        var response = await sender.Send(new CreateShortLinkCommand("https://example.com", RedirectType.Temporary, null));
         var db = scope.ServiceProvider.GetRequiredService<ShortLinkDbContext>();
         var tracked = Assert.Single(db.ChangeTracker.Entries<ShortLink>()).Entity;
 

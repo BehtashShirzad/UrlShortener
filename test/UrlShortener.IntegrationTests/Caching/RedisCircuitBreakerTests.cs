@@ -82,7 +82,7 @@ public sealed class RedisCircuitBreakerTests : IAsyncLifetime
             Assert.Equal(found, await cache.GetAsync(link.ShortCode));
             Assert.Equal(1, _factory.Reads.Count);
 
-            var memoryEntry = new ShortLinkCacheEntry("https://memory.example", RedirectType.Temporary, null);
+            var memoryEntry = new ShortLinkCacheEntry(link.Id,"https://memory.example", RedirectType.Temporary, null);
             await cache.SetAsync("Outage1", memoryEntry);
             Assert.Equal(memoryEntry, await cache.GetAsync("Outage1"));
             await cache.RemoveAsync("Outage1");
@@ -106,7 +106,7 @@ public sealed class RedisCircuitBreakerTests : IAsyncLifetime
             }
         }
 
-        var recovered = new ShortLinkCacheEntry("https://recovered.example", RedirectType.Permanent, null);
+        var recovered = new ShortLinkCacheEntry(link.Id, "https://recovered.example", RedirectType.Permanent, null);
         await cache.SetAsync("Recover", recovered);
         Assert.True(await _factory.RedisDatabase.KeyExistsAsync("short-link:Recover"));
         _factory.Services.GetRequiredService<IMemoryCache>().Remove("short-link:l1:Recover");

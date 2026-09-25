@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Application.Dtos
 {
-    public record CreateShortLinkRequest(string originalUrl, string shortCode, bool isActive, RedirectType redirectType, DateTime? expiresAt, long maxClicks);
+    public record CreateShortLinkRequest(string originalUrl, RedirectType redirectType, DateTime? expiresAt);
     public class CreateShortLinkResponse
     {
     }

@@ -6,7 +6,7 @@ namespace Application.Features.ShortLinks.Commands.CreateShortLink
 {
     public sealed record CreateShortLinkCommand(
      string OriginalUrl,
-     RedirectType RedirectType, DateTime? ExpiresAt,long MaxClicks)
+     RedirectType RedirectType, DateTime? ExpiresAt)
      
      : ICommand<CreateShortLinkCommandResponse>;
 }

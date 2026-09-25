@@ -20,7 +20,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
 
         var entry = await scope.ServiceProvider.GetRequiredService<IShortLinkCacheService>().GetAsync(link.ShortCode);
 
-        Assert.Equal(new ShortLinkCacheEntry(link.OriginalUrl, link.RedirectType, link.ExpiresAt), entry);
+        Assert.Equal(new ShortLinkCacheEntry(link.Id, link.OriginalUrl, link.RedirectType, link.ExpiresAt), entry);
         Assert.Equal(1, Factory.Reads.Count);
         var json = await Factory.RedisDatabase.StringGetAsync($"short-link:{link.ShortCode}");
         Assert.Equal(entry, JsonSerializer.Deserialize<ShortLinkCacheEntry>(json.ToString()));
@@ -30,7 +30,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
     [Fact]
     public async Task Redis_hit_returns_the_entry_without_reading_PostgreSQL()
     {
-        var entry = new ShortLinkCacheEntry("https://redis.example", RedirectType.Permanent, null);
+        var entry = new ShortLinkCacheEntry(Guid.NewGuid(), "https://redis.example", RedirectType.Permanent, null);
         await Factory.RedisDatabase.StringSetAsync("short-link:Redis01", JsonSerializer.Serialize(entry), TimeSpan.FromMinutes(1));
         await using var scope = Factory.Services.CreateAsyncScope();
 
@@ -45,7 +45,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var cache = scope.ServiceProvider.GetRequiredService<IShortLinkCacheService>();
-        var entry = new ShortLinkCacheEntry("https://memory.example", RedirectType.Temporary, null);
+        var entry = new ShortLinkCacheEntry(Guid.NewGuid(), "https://memory.example", RedirectType.Temporary, null);
         await cache.SetAsync("Memory1", entry);
         await Factory.RedisDatabase.KeyDeleteAsync("short-link:Memory1");
 
@@ -58,12 +58,14 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var cache = scope.ServiceProvider.GetRequiredService<IShortLinkCacheService>();
-        await cache.SetAsync("Order01", new ShortLinkCacheEntry("https://memory.example", RedirectType.Temporary, null));
-        var redisEntry = new ShortLinkCacheEntry("https://redis.example", RedirectType.Permanent, null);
+        var id = Guid.NewGuid();
+        await cache.SetAsync("Order01", new ShortLinkCacheEntry(id, "https://memory.example", RedirectType.Temporary, null));
+        var redisEntry = new ShortLinkCacheEntry(id, "https://memory.example", RedirectType.Permanent, null);
         await Factory.RedisDatabase.StringSetAsync("short-link:Order01", JsonSerializer.Serialize(redisEntry), TimeSpan.FromMinutes(1));
 
         Assert.Equal(redisEntry, await cache.GetAsync("Order01"));
         Assert.Equal(0, Factory.Reads.Count);
+        Assert.Equal(id, redisEntry.Id);
     }
 
     [Theory]
@@ -148,7 +150,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
         DateTime? expiresAt = expiring ? DateTime.UtcNow.Add(lifetime) : null;
         await using var scope = Factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<IShortLinkCacheService>().SetAsync("Ttl1234",
-            new ShortLinkCacheEntry("https://example.com", RedirectType.Temporary, expiresAt));
+            new ShortLinkCacheEntry(Guid.NewGuid(), "https://example.com", RedirectType.Temporary, expiresAt));
 
         var ttl = await Factory.RedisDatabase.KeyTimeToLiveAsync("short-link:Ttl1234");
 
@@ -161,7 +163,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<IShortLinkCacheService>().SetAsync("Expired",
-            new ShortLinkCacheEntry("https://example.com", RedirectType.Temporary, DateTime.UtcNow.AddMinutes(-1)));
+            new ShortLinkCacheEntry(Guid.NewGuid(), "https://example.com", RedirectType.Temporary, DateTime.UtcNow.AddMinutes(-1)));
 
         Assert.False(await Factory.RedisDatabase.KeyExistsAsync("short-link:Expired"));
         Assert.False(Factory.Services.GetRequiredService<IMemoryCache>().TryGetValue("short-link:l1:Expired", out _));
@@ -189,7 +191,7 @@ public sealed class ShortLinkCacheTests(ShortenerFactory factory) : IntegrationT
     {
         var expiresAt = DateTime.UtcNow.AddMinutes(-1);
         var link = await Factory.SeedAsync(expiresAt: expiresAt);
-        var staleEntry = new ShortLinkCacheEntry(link.OriginalUrl, link.RedirectType, expiresAt);
+        var staleEntry = new ShortLinkCacheEntry(link.Id, link.OriginalUrl, link.RedirectType, expiresAt);
         await Factory.RedisDatabase.StringSetAsync($"short-link:{link.ShortCode}",
             JsonSerializer.Serialize(staleEntry), TimeSpan.FromMinutes(10));
         await using var scope = Factory.Services.CreateAsyncScope();

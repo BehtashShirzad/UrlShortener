@@ -35,7 +35,9 @@ namespace Infrastructure.Persistence.Configuration
             builder.HasIndex(x => x.ShortCode)
                 .IsUnique();
 
-           
+            builder.Property(x => x.TotalClicks)
+             .IsRequired()
+             .HasDefaultValue(0L);
 
             builder.Property(x => x.ExpiresAt);
 

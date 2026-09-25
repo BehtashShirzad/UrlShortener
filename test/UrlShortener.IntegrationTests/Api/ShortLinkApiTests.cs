@@ -23,7 +23,7 @@ public sealed class ShortLinkApiTests(ShortenerFactory factory) : IntegrationTes
         const string originalUrl = "https://example.com/path?q=a%20b&source=test#section";
         var response = await Factory.Client.PostAsJsonAsync("/api/v1/short-links", new
         {
-            originalUrl, shortCode = "ignored", isActive = false, redirectType = type, expiresAt, maxClicks = 123
+            originalUrl,    redirectType = type, expiresAt
         });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -44,7 +44,7 @@ public sealed class ShortLinkApiTests(ShortenerFactory factory) : IntegrationTes
         var json = await Factory.RedisDatabase.StringGetAsync($"short-link:{created.ShortenCode}");
         Assert.True(json.HasValue);
         var cached = JsonSerializer.Deserialize<ShortLinkCacheEntry>(json.ToString());
-        Assert.Equal(new ShortLinkCacheEntry(originalUrl, type, expiresAt), cached);
+        Assert.Equal(new ShortLinkCacheEntry(row.Id,originalUrl, type, expiresAt), cached);
 
         Factory.Reads.Reset();
         var redirect = await Factory.Client.GetAsync('/' + created.ShortenCode);

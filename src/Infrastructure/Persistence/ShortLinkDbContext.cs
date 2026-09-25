@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Contracts;
 using Domain.Abstractions.Aggregates;
 using Domain.Abstractions.Entities;
+using Domain.Aggregates.ProcessedClick;
 using Domain.Aggregates.ShortLinks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -27,6 +28,7 @@ public sealed class ShortLinkDbContext :DbContext
         this.currentUser = currentUser;
     }
     public DbSet<ShortLink> ShortLinks => Set<ShortLink>();
+    public DbSet<ProcessedClickEvent> ProcessedClickEvents => Set<ProcessedClickEvent>();
 
     public override Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)

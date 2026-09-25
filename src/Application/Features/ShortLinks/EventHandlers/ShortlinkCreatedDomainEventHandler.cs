@@ -21,6 +21,7 @@ public sealed class ShortLinkCreatedDomainEventHandler(
         await shortLinkCache.SetAsync(
             domainEvent.ShortCode,
             new  ShortLinkCacheEntry(
+            domainEvent.ShortLinkId,
             domainEvent.OriginalUrl,
             domainEvent.RedirectType,
             domainEvent.ExpiresAt),
