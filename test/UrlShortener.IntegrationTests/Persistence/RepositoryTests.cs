@@ -34,7 +34,7 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
         // Whole seconds avoid PostgreSQL's microsecond timestamp rounding.
         DateTime? expiresAt = limited ? DateTime.UtcNow.Date.AddDays(2) : null;
         long? maxClicks = limited ? 123L : null;
-        var original = await Factory.SeedAsync(expiresAt: expiresAt, type: type, maxClicks: maxClicks);
+        var original = await Factory.SeedAsync(expiresAt: expiresAt, type: type);
 
         await using var scope = Factory.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IShortLinkRepository>();
@@ -45,7 +45,6 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
         Assert.Equal(original.ShortCode, found.ShortCode);
         Assert.Equal(type, found.RedirectType);
         Assert.Equal(expiresAt, found.ExpiresAt);
-        Assert.Equal(maxClicks, found.MaxClicks);
         Assert.True(found.IsActive);
         Assert.Empty(found.DomainEvents);
         Assert.True(await repository.ExistsByShortCodeAsync(found.ShortCode));
@@ -71,7 +70,7 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
         await Factory.SeedAsync();
         await using var scope = Factory.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IShortLinkRepository>();
-        var duplicate = ShortLink.Create("https://other.example", "Ab12xyz", RedirectType.Temporary, null, null);
+        var duplicate = ShortLink.Create("https://other.example", "Ab12xyz", RedirectType.Temporary, null);
         await repository.AddAsync(duplicate);
 
         var exception = await Assert.ThrowsAsync<DbUpdateException>(() =>
@@ -89,7 +88,7 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
     public async Task Database_rejects_values_exceeding_column_limits(int urlLength, int codeLength)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        var link = ShortLink.Create(new string('u', urlLength), new string('c', codeLength), RedirectType.Temporary, null, null);
+        var link = ShortLink.Create(new string('u', urlLength), new string('c', codeLength), RedirectType.Temporary, null);
         await scope.ServiceProvider.GetRequiredService<IShortLinkRepository>().AddAsync(link);
 
         var exception = await Assert.ThrowsAsync<DbUpdateException>(() =>
@@ -126,7 +125,7 @@ public sealed class RepositoryTests(ShortenerFactory factory) : IntegrationTest(
             {
                 Assert.True(work.HasActiveTransaction);
                 await scope.ServiceProvider.GetRequiredService<IShortLinkRepository>().AddAsync(
-                    ShortLink.Create("https://example.com", "Tx12345", RedirectType.Temporary, null, null));
+                    ShortLink.Create("https://example.com", "Tx12345", RedirectType.Temporary, null));
                 await work.SaveChangesAsync();
                 if (commit) await transaction.CommitAsync();
                 else await transaction.RollbackAsync();

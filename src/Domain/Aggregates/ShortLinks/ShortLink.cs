@@ -14,13 +14,12 @@ namespace Domain.Aggregates.ShortLinks
         {
 
         }
-        private ShortLink(string originalUrl,string shortCode,  RedirectType redirectType, DateTime? expiresAt,long? maxClicks)
+        private ShortLink(string originalUrl,string shortCode,  RedirectType redirectType, DateTime? expiresAt)
         {
             OriginalUrl= originalUrl;
             ShortCode= shortCode;
             ExpiresAt= expiresAt;
             IsActive=true;
-            MaxClicks = maxClicks;
             RedirectType = redirectType;
             Id = IdGenerator.New();
         }
@@ -28,12 +27,12 @@ namespace Domain.Aggregates.ShortLinks
         public string ShortCode { get; private set; }
         public DateTime? ExpiresAt {get;private set;}
         public bool IsActive {  get; private set; }
-        public long? MaxClicks { get;private set;  }
+        public long TotalClicks { get;private set;  }
         public RedirectType RedirectType { get;private set;  }
 
-        public static ShortLink Create(string originalUrl, string shortCode, RedirectType redirectType, DateTime? expiresAt, long? maxClicks)
+        public static ShortLink Create(string originalUrl, string shortCode, RedirectType redirectType, DateTime? expiresAt)
         {
-            var shortLink= new ShortLink(originalUrl, shortCode,  redirectType, expiresAt, maxClicks);
+            var shortLink= new ShortLink(originalUrl, shortCode,  redirectType, expiresAt);
 
             shortLink.RaiseEvent(
              new ShortLinkCreatedDomainEvent(
@@ -45,6 +44,10 @@ namespace Domain.Aggregates.ShortLinks
             return shortLink;
         }
         
+        public  void AddClick()
+        {
+            TotalClicks += 1;
+        }
 
     }
 }

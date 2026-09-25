@@ -69,12 +69,12 @@ public sealed class ShortenerFactory : WebApplicationFactory<Program>, IAsyncLif
     }
 
     public async Task<ShortLink> SeedAsync(string code = "Ab12xyz", DateTime? expiresAt = null,
-        RedirectType type = RedirectType.Temporary, long? maxClicks = null)
+        RedirectType type = RedirectType.Temporary)
     {
         await using var scope = Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IShortLinkRepository>();
         var work = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var link = ShortLink.Create("https://example.com/path?q=a%20b", code, type, expiresAt, maxClicks);
+        var link = ShortLink.Create("https://example.com/path?q=a%20b", code, type, expiresAt);
         await repository.AddAsync(link);
         await work.SaveChangesAsync();
         // A seeded row starts cold so a read must exercise PostgreSQL and cache population.

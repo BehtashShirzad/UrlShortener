@@ -16,8 +16,7 @@ public sealed class CreateShortLinkCommandHandler(
         var shortLink = await shortLinkDomainService.CreateShortLink(
             request.OriginalUrl,
             request.RedirectType,
-            request.ExpiresAt,
-            request.MaxClicks);
+            request.ExpiresAt);
 
         await shortLinkRepository.AddAsync(
             shortLink,

@@ -6,13 +6,13 @@ namespace UrlShortener.UnitTests.Domain;
 public sealed class ShortLinkTests
 {
     [Theory]
-    [InlineData(RedirectType.Temporary, null)]
-    [InlineData(RedirectType.Permanent, 100L)]
-    public void Create_preserves_settings_and_assigns_an_active_identity(RedirectType type, long? maxClicks)
+    [InlineData(RedirectType.Temporary )]
+    [InlineData(RedirectType.Permanent )]
+    public void Create_preserves_settings_and_assigns_an_active_identity(RedirectType type )
     {
         var expiresAt = DateTime.UtcNow.AddDays(1);
 
-        var link = ShortLink.Create("https://example.com/path?q=a%20b", "Ab12xyz", type, expiresAt, maxClicks);
+        var link = ShortLink.Create("https://example.com/path?q=a%20b", "Ab12xyz", type, expiresAt );
 
         Assert.NotEqual(Guid.Empty, link.Id);
         Assert.Equal(7, link.Id.Version);
@@ -20,7 +20,7 @@ public sealed class ShortLinkTests
         Assert.Equal("Ab12xyz", link.ShortCode);
         Assert.Equal(type, link.RedirectType);
         Assert.Equal(expiresAt, link.ExpiresAt);
-        Assert.Equal(maxClicks, link.MaxClicks);
+         
         Assert.True(link.IsActive);
     }
 
@@ -28,7 +28,7 @@ public sealed class ShortLinkTests
     public void Create_without_expiration_raises_one_complete_creation_event()
     {
         var before = DateTime.UtcNow;
-        var link = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Permanent, null, null);
+        var link = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Permanent, null );
 
         var raised = Assert.IsType<ShortLinkCreatedDomainEvent>(Assert.Single(link.DomainEvents));
         Assert.Equal(link.Id, raised.ShortLinkId);
@@ -45,7 +45,7 @@ public sealed class ShortLinkTests
     [Fact]
     public void ClearEvents_removes_pending_events_without_changing_the_link()
     {
-        var link = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null, null);
+        var link = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null);
         var id = link.Id;
 
         link.ClearEvents();
@@ -60,8 +60,8 @@ public sealed class ShortLinkTests
     [Fact]
     public void Two_links_with_identical_content_have_different_identities()
     {
-        var first = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null, null);
-        var second = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null, null);
+        var first = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null );
+        var second = ShortLink.Create("https://example.com", "Ab12xyz", RedirectType.Temporary, null );
 
         Assert.NotEqual(first.Id, second.Id);
         Assert.NotEqual(first, second);

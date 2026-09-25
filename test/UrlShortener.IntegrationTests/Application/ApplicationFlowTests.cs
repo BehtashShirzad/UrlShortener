@@ -20,13 +20,12 @@ public sealed class ApplicationFlowTests(ShortenerFactory factory) : Integration
         var service = scope.ServiceProvider.GetRequiredService<IShortLinkDomainService>();
         var expiresAt = DateTime.UtcNow.Date.AddDays(2);
 
-        var link = await service.CreateShortLink("https://example.com", RedirectType.Permanent, expiresAt, 10);
+        var link = await service.CreateShortLink("https://example.com", RedirectType.Permanent, expiresAt);
 
         Assert.Matches("^[a-zA-Z0-9]{7}$", link.ShortCode);
         Assert.Equal("https://example.com", link.OriginalUrl);
         Assert.Equal(RedirectType.Permanent, link.RedirectType);
         Assert.Equal(expiresAt, link.ExpiresAt);
-        Assert.Equal(10, link.MaxClicks);
         Assert.Single(link.DomainEvents);
         Assert.Equal(1, Factory.Reads.Count);
         var db = scope.ServiceProvider.GetRequiredService<ShortLinkDbContext>();

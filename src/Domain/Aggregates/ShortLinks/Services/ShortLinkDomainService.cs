@@ -9,8 +9,7 @@ internal sealed class ShortLinkDomainService(
     public async Task<ShortLink> CreateShortLink(
         string originalUrl,
         RedirectType redirectType,
-        DateTime? expiresAt,
-        long? maxClicks)
+        DateTime? expiresAt)
     {
         var shortCode = await GenerateUniqueShortCodeAsync();
 
@@ -18,8 +17,7 @@ internal sealed class ShortLinkDomainService(
             originalUrl,
             shortCode,
             redirectType,
-            expiresAt,
-            maxClicks);
+            expiresAt);
     }
 
     private async Task<string> GenerateUniqueShortCodeAsync()

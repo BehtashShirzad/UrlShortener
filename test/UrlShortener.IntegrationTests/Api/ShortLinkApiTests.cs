@@ -37,7 +37,6 @@ public sealed class ShortLinkApiTests(ShortenerFactory factory) : IntegrationTes
         Assert.Equal(originalUrl, row.OriginalUrl);
         Assert.Equal(type, row.RedirectType);
         Assert.Equal(expiresAt, row.ExpiresAt);
-        Assert.Equal(123, row.MaxClicks);
         Assert.True(row.IsActive);
         Assert.NotEqual(default, row.CreatedAt);
         Assert.Equal(Guid.Empty, row.CreatorId);

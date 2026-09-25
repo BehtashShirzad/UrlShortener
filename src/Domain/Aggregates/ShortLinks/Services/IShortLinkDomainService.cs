@@ -7,6 +7,6 @@ namespace Domain.Aggregates.ShortLinks.Services
 {
     public interface IShortLinkDomainService
     {
-        public Task<ShortLink> CreateShortLink(string originalUrl,     RedirectType redirectType, DateTime? expiresAt, long? maxClicks);
+        public Task<ShortLink> CreateShortLink(string originalUrl,     RedirectType redirectType, DateTime? expiresAt);
     }
 }
